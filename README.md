@@ -20,5 +20,12 @@ npm run build
 npm run lint
 ```
 
+### git
+```
+git add .
+git commit -m ''
+git push origin master
+```
+
 ### Customize configuration
 See [Configuration Reference](https://cli.vuejs.org/config/).
