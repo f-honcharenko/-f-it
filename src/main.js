@@ -2,7 +2,7 @@ import Vue from 'vue'
 import App from './App.vue'
 import { BootstrapVue, IconsPlugin } from 'bootstrap-vue'
 import VueRouter from 'vue-router'
-import HelloWorld from './components/HelloWorld'
+import AdminPanel from './components/AdminPanel'
 import TimeTable from './components/TimeTable'
 import Chooser from './components/Chooser'
 import Lesson from './components/Lesson'
@@ -21,7 +21,7 @@ Vue.component('full-calendar', fullCalendar)
 const routes = [
   { path: '/', component: Chooser },
   { path: '/timetable', component: TimeTable },
-  { path: '/admin', component: HelloWorld },
+  { path: '/admin', component: AdminPanel },
   { path: '/lesson', component: Lesson, name: 'Lesson', props: true },
 ];
 

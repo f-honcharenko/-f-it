@@ -61,7 +61,7 @@
 <script>
 import axios from 'axios';
 export default {
-  name: "HelloWorld",
+  name: "AdminPanel",
   props: {
     msg: String,
   },
