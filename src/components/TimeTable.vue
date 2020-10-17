@@ -5,14 +5,13 @@
     </center>
     <FullCalendar
       ref="fullCalendar"
-      @events="calendarOptions.events"
       :key="claendarKey"
       :options="calendarOptions"
     />
   </div>
 </template>
 <script>
-import axios from "axios";
+// import axios from "axios";
 import FullCalendar from "@fullcalendar/vue";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -22,8 +21,16 @@ import bootstrapPlugin from "@fullcalendar/bootstrap";
 
 export default {
   name: "header",
+   watch: {
+    // эта функция запускается при любом изменении вопроса
+    editPlatform: function (getPlatform) {
+      console.log(getPlatform);
+      this.claendarKey=10;
+    }
+  },
   data() {
     return {
+      test:'',
       group: "ПП12/1",
       claendarKey: 0,
       calendarOptions: {
@@ -36,7 +43,9 @@ export default {
           listPlugin,
           bootstrapPlugin,
         ],
-        initialView: "dayGridMonth",
+        
+        // initialView: "",//see 'created'
+        // initialView: "dayGridMonth",
         // initialView: 'dayGridWeek',
         // initialView: 'timeGridWeek',
         // initialView: 'listWeek',
@@ -87,7 +96,7 @@ export default {
         eventSources: [
           {
             // url: "https://fit-backend.ew.r.appspot.com/timetables/1/getCal",
-            url: 'http://localhost:5000/timetables/1/getCal',
+            url: this.$nodeLink+'/timetables/1/getCal',
             method: "POST",
             extraParams: {
               group: this.$route.query.group,
@@ -110,31 +119,30 @@ export default {
     msg: String,
     group1: String,
   },
-  beforeCreate() {
-    console.log("5000" + document.domain.substr(4));
-    document.title = "[F]it";
-    //Получение данных
-    axios.get("http://" + document.domain + ":50001/timetables/1/get").then(
-      (res) => {
-        console.log(res.data);
-        this.data = res.data;
-        console.log("DATA:", res.data);
-        for (let key in res.data) {
-          console.log(key);
-          const event = {
-            title: key,
-            date: key,
-            color: "#ff5733",
-          };
+  // computed: {
+  //   // геттер вычисляемого значения
+  //   getPlatform: {
+  //     get: function(){
+  //       if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
+  //         return 'mobile'
+  //       } else{
+  //         return 'computer'
+  //       } 
+  //     },
+  //     set: function(value){
+  //       this.group = value;
+  //       console.log(value);
+  //     }
+      // `this` указывает на экземпляр vm
 
-          console.log(event);
-        }
-        console.log(this.calendarOptions.events);
-      },
-      (err) => {
-        console.log(err);
-      }
-    );
+    // }
+  // }
+  created() {
+    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
+          this.calendarOptions.initialView = 'listWeek'
+        } else{
+          this.calendarOptions.initialView = 'dayGridMonth'
+        } 
   },
 };
 </script>
