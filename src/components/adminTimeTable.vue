@@ -1,27 +1,22 @@
 <template>
   <div>
-    <b-modal id="modal-lg" size="lg" :title="selectedLesson.title">
-      <h4>
-        Преподователь: <i>{{ selectedLesson.teacher }}</i>
-      </h4>
-      <!-- <h4>Время:<i>{{se  lectedLesson.dateS}}</i></h4>  -->
-      <h4 v-if="selectedLesson.link">
-        <a :href="selectedLesson.link">Ссылка</a><i></i>
-      </h4>
-      <h4 v-else>Ссылка отсутствует</h4>
-    </b-modal>
-    <center>
-      <h1>{{ this.$route.query.group }}</h1>
-    </center>
-    <FullCalendar
-      ref="fullCalendar"
-      :key="claendarKey"
-      :options="calendarOptions"
-    />
+    <div v-if="auth">
+      <center>
+        <h1>{{ this.$route.query.group }} [Редактирование]</h1>
+      </center>
+      <FullCalendar
+        ref="fullCalendar"
+        :key="claendarKey"
+        :options="calendarOptions"
+      />
+    </div>
+    <div v-else>
+      <div class="h1">У вас нет доступа к данной странице!</div>
+    </div>
   </div>
 </template>
 <script>
-// import axios from "axios";
+import axios from "axios";
 import FullCalendar from "@fullcalendar/vue";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import interactionPlugin from "@fullcalendar/interaction";
@@ -30,7 +25,7 @@ import listPlugin from "@fullcalendar/list";
 import bootstrapPlugin from "@fullcalendar/bootstrap";
 
 export default {
-  name: "TimeTable",
+  name: "adminTimeTable",
   watch: {
     // эта функция запускается при любом изменении вопроса
     editPlatform: function (getPlatform) {
@@ -40,14 +35,8 @@ export default {
   },
   data() {
     return {
-      selectedLesson: {
-        title: "",
-        teacher: "",
-        link: "",
-        dateS: "",
-        dateE: "",
-      },
-      test: "",
+      auth: "",
+      user: {},
       group: "ПП12/1",
       claendarKey: 0,
       calendarOptions: {
@@ -83,30 +72,25 @@ export default {
           if (info.event.extendedProps.type == "bday") {
             console.log("bday");
           } else {
-            // this.$router.push({
-            //   name: "Lesson",
-            //   params: {
-            //     title: info.event.title,
-            //     url: info.event.url,
-            //     date: String(info.event.start).slice(0, 10),
-            //     timeStart: String(info.event.start).slice(16, 21),
-            //     timeEnd: String(info.event.end).slice(16, 21),
-            //     teacher: info.event.extendedProps.teacher,
-            //   },
-            // });
-            this.selectedLesson.title = info.event.title;
-            this.selectedLesson.teacher = info.event.extendedProps.teacher;
-            this.selectedLesson.link = info.event.url;
-            this.selectedLesson.dateS = info.event.start;
-            console.log(info.event.start);
-            // this.selectedLesson.dateS=String(new Date(Date.UTC(info.event.start)));
-
-            this.selectedLesson.dateE = String(info.event.end).slice(16, 21);
-            this.$bvModal.show("modal-lg");
-            console.log(this.selectedLesson);
+            console.log(info.event.extendedProps);
+            this.$router.push({
+              name: "LessonEdit",
+              params: {
+                title: info.event.title,
+                url: info.event.url,
+                date: String(info.event.start).slice(0, 10),
+                timeStart: String(info.event.start).slice(16, 21),
+                timeEnd: String(info.event.end).slice(16, 21),
+                teacher: info.event.extendedProps.teacher,
+                lessonNumber: info.event.extendedProps.lessonNumber,
+                group: this.$route.query.group,
+                fullDate: info.event.extendedProps.date,
+                spec: this.$route.query.spec,
+              },
+            });
           }
         },
-        dayMaxEventRows: false, // for all non-TimeGrid views
+        dayMaxEventRows: true, // for all non-TimeGrid views
         views: {
           timeGrid: {
             dayMaxEventRows: 6, // adjust to 6 only for timeGridWeek/timeGridDay
@@ -114,9 +98,19 @@ export default {
         },
         locale: "ru",
         firstDay: 1,
-        dateClick: this.handleDateClick,
+        navLinkDayClick: (date) => {
+          console.log(date);
+          this.$router.push({
+            name: "DayEdit",
+            params: {
+              date: date.toISOString(),
+              spec: this.$route.query.spec,
+              group: this.$route.query.group,
+            },
+          });
+        },
         themeSystem: "standart",
-        navLinks: "true",
+        navLinks: true,
         eventTimeFormat: {
           hour: "2-digit",
           minute: "2-digit",
@@ -125,7 +119,6 @@ export default {
         displayEventEnd: true,
         eventSources: [
           {
-            // url: "https://fit-backend.ew.r.appspot.com/timetables/1/getCal",
             url: this.$nodeLink + "/timetables/1/getCal",
             method: "POST",
             extraParams: {
@@ -149,25 +142,23 @@ export default {
     msg: String,
     group1: String,
   },
-  // computed: {
-  //   // геттер вычисляемого значения
-  //   getPlatform: {
-  //     get: function(){
-  //       if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(navigator.userAgent)) {
-  //         return 'mobile'
-  //       } else{
-  //         return 'computer'
-  //       }
-  //     },
-  //     set: function(value){
-  //       this.group = value;
-  //       console.log(value);
-  //     }
-  // `this` указывает на экземпляр vm
 
-  // }
-  // }
-  beforeMount() {
+  beforeCreate() {
+    axios.post(this.$nodeLink + "/lk", { token: localStorage["token"] }).then(
+      (res) => {
+        console.log(res);
+        if (res.status == 200) {
+          console.log(res);
+          this.auth = true;
+          this.user = res.data.decoded.data;
+        }
+      },
+      (err) => {
+        console.log(err);
+      }
+    );
+  },
+  created() {
     if (
       /Android|webOS|iPhone|iPad|iPod|BlackBerry|BB|PlayBook|IEMobile|Windows Phone|Kindle|Silk|Opera Mini/i.test(
         navigator.userAgent
@@ -184,4 +175,4 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
-</style>
+</style> 
