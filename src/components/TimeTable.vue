@@ -6,7 +6,7 @@
       </h4>
       <!-- <h4>Время:<i>{{se  lectedLesson.dateS}}</i></h4>  -->
       <h4 v-if="selectedLesson.link">
-        <a :href="selectedLesson.link">Ссылка</a><i></i>
+        <a :href="selectedLesson.link" target="_blank">Ссылка</a><i></i>
       </h4>
       <h4 v-else>Ссылка отсутствует</h4>
     </b-modal>
@@ -80,30 +80,20 @@ export default {
         nowIndicator: true,
         eventClick: (info) => {
           info.jsEvent.preventDefault();
+          console.log(info.event.title);
           if (info.event.extendedProps.type == "bday") {
             console.log("bday");
           } else {
-            // this.$router.push({
-            //   name: "Lesson",
-            //   params: {
-            //     title: info.event.title,
-            //     url: info.event.url,
-            //     date: String(info.event.start).slice(0, 10),
-            //     timeStart: String(info.event.start).slice(16, 21),
-            //     timeEnd: String(info.event.end).slice(16, 21),
-            //     teacher: info.event.extendedProps.teacher,
-            //   },
-            // });
-            this.selectedLesson.title = info.event.title;
-            this.selectedLesson.teacher = info.event.extendedProps.teacher;
-            this.selectedLesson.link = info.event.url;
-            this.selectedLesson.dateS = info.event.start;
-            console.log(info.event.start);
-            // this.selectedLesson.dateS=String(new Date(Date.UTC(info.event.start)));
-
-            this.selectedLesson.dateE = String(info.event.end).slice(16, 21);
-            this.$bvModal.show("modal-lg");
-            console.log(this.selectedLesson);
+            if (info.event.title != "") {
+              this.selectedLesson.title = info.event.title;
+              this.selectedLesson.teacher = info.event.extendedProps.teacher;
+              this.selectedLesson.link = info.event.url;
+              this.selectedLesson.dateS = info.event.start;
+              this.selectedLesson.dateE = String(info.event.end).slice(16, 21);
+              this.$bvModal.show("modal-lg");
+            } else {
+              this.selectedLesson.title = "";
+            }
           }
         },
         dayMaxEventRows: false, // for all non-TimeGrid views
@@ -126,7 +116,7 @@ export default {
         eventSources: [
           {
             // url: "https://fit-backend.ew.r.appspot.com/timetables/1/getCal",
-            url: this.$nodeLink + "/timetables/1/getCal",
+            url: this.$nodeLink + "/timetables/2/getCal",
             method: "POST",
             extraParams: {
               group: this.$route.query.group,

@@ -1,15 +1,14 @@
 <template>
   <div id="app">
-    <router-view ></router-view>
+    <router-view></router-view>
 
     <div id="footer"><center>©F. Honcharenko 2020</center></div>
   </div>
-  
 </template>
 
 <script>
-import 'bootstrap/dist/css/bootstrap.css'
-import 'bootstrap-vue/dist/bootstrap-vue.css'
+import "bootstrap/dist/css/bootstrap.css";
+import "bootstrap-vue/dist/bootstrap-vue.css";
 
 export default {
   name: "App",

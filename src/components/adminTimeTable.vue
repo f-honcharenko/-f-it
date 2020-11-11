@@ -1,9 +1,54 @@
 <template>
   <div>
     <div v-if="auth">
+      <!-- START modal3 -->
+      <b-modal
+        id="modal-prevent-closing2"
+        ref="modal"
+        title="Изменение пары"
+        @show="resetModal"
+        @hidden="resetModal"
+        @ok="editLesson2"
+      >
+        <form ref="form" @submit.stop.prevent="handleSubmit">
+          <b-form-group label="Предмет">
+            <b-form-select
+              :options="options.lessons"
+              v-model="selectedLesson.title"
+              required
+            >
+            </b-form-select>
+            <b-form-select
+              :options="options.types"
+              v-model="selectedLesson.type"
+              required
+            ></b-form-select>
+          </b-form-group>
+
+          <b-form-group label="Преподаватель">
+            <b-form-select
+              :options="options.teachers"
+              v-model="selectedLesson.teacher"
+              required
+            ></b-form-select>
+          </b-form-group>
+
+          <b-form-group label="Ссылка">
+            <b-form-input
+              required
+              type="url"
+              v-model="selectedLesson.url"
+            ></b-form-input>
+          </b-form-group>
+
+          <!-- </b-form-group> -->
+        </form>
+      </b-modal>
+      <!-- END modal3 -->
       <center>
         <h1>{{ this.$route.query.group }} [Редактирование]</h1>
       </center>
+
       <FullCalendar
         ref="fullCalendar"
         :key="claendarKey"
@@ -35,6 +80,7 @@ export default {
   },
   data() {
     return {
+      options: {},
       auth: "",
       user: {},
       group: "ПП12/1",
@@ -49,12 +95,6 @@ export default {
           listPlugin,
           bootstrapPlugin,
         ],
-
-        // initialView: "",//see 'created'
-        // initialView: "dayGridMonth",
-        // initialView: 'dayGridWeek',
-        // initialView: 'timeGridWeek',
-        // initialView: 'listWeek',
         weekNumbers: true,
         selectable: false,
         headerToolbar: {
@@ -72,25 +112,35 @@ export default {
           if (info.event.extendedProps.type == "bday") {
             console.log("bday");
           } else {
-            console.log(info.event.extendedProps);
-            this.$router.push({
-              name: "LessonEdit",
-              params: {
-                title: info.event.title,
-                url: info.event.url,
-                date: String(info.event.start).slice(0, 10),
-                timeStart: String(info.event.start).slice(16, 21),
-                timeEnd: String(info.event.end).slice(16, 21),
-                teacher: info.event.extendedProps.teacher,
-                lessonNumber: info.event.extendedProps.lessonNumber,
-                group: this.$route.query.group,
-                fullDate: info.event.extendedProps.date,
-                spec: this.$route.query.spec,
-              },
-            });
+            console.log();
+            //REWRITE THIS(TITLE AND )
+            this.selectedLesson = {
+              date: info.event.start.setUTCHours(0, 0),
+              title: info.event.extendedProps.title,
+              teacher: info.event.extendedProps.teacher,
+              type: info.event.extendedProps.type,
+              url: info.event.url,
+              lessonNumber: info.event.extendedProps.lessonNumber,
+              group: this.$route.query.group,
+            };
+            this.$bvModal.show("modal-prevent-closing2");
+            // this.$router.push({
+            //   name: "LessonEdit",
+            //   params: {
+            //     title: info.event.title,
+            //     url: info.event.url,
+            //     date: String(info.event.start).slice(0, 10),
+            //     timeStart: String(info.event.start).slice(16, 21),
+            //     timeEnd: String(info.event.end).slice(16, 21),
+            //     teacher: info.event.extendedProps.teacher,
+            //     lessonNumber: info.event.extendedProps.lessonNumber,
+            //     group: this.$route.query.group,
+            //     fullDate: info.event.extendedProps.date,
+            //   },
+            // });
           }
         },
-        dayMaxEventRows: true, // for all non-TimeGrid views
+        dayMaxEventRows: false, // for all non-TimeGrid views
         views: {
           timeGrid: {
             dayMaxEventRows: 6, // adjust to 6 only for timeGridWeek/timeGridDay
@@ -99,11 +149,13 @@ export default {
         locale: "ru",
         firstDay: 1,
         navLinkDayClick: (date) => {
-          console.log(date);
+          let date2 = new Date(date);
+          date2.setDate(date.getDate() + 1);
+          console.log(date2);
           this.$router.push({
             name: "DayEdit",
             params: {
-              date: date.toISOString(),
+              date: date2,
               spec: this.$route.query.spec,
               group: this.$route.query.group,
             },
@@ -119,7 +171,7 @@ export default {
         displayEventEnd: true,
         eventSources: [
           {
-            url: this.$nodeLink + "/timetables/1/getCal",
+            url: this.$nodeLink + "/timetables/2/getCal",
             method: "POST",
             extraParams: {
               group: this.$route.query.group,
@@ -133,6 +185,14 @@ export default {
         ],
       },
       data: {},
+      selectedLesson: {
+        title: "",
+        teacher: "",
+        type: "",
+        url: "",
+        lessonNumber: "",
+        group: "",
+      },
     };
   },
   components: {
@@ -142,7 +202,6 @@ export default {
     msg: String,
     group1: String,
   },
-
   beforeCreate() {
     axios.post(this.$nodeLink + "/lk", { token: localStorage["token"] }).then(
       (res) => {
@@ -157,6 +216,21 @@ export default {
         console.log(err);
       }
     );
+    axios
+      .post(this.$nodeLink + "/get/options", { token: localStorage["token"] })
+      .then(
+        (res) => {
+          if (res.status == 200) {
+            console.log(res.data.file);
+            this.options = res.data.file;
+            this.options.lessons = this.options.lessons.sort();
+            this.options.teachers = this.options.teachers.sort();
+          }
+        },
+        (err) => {
+          alert(err);
+        }
+      );
   },
   created() {
     if (
@@ -168,6 +242,61 @@ export default {
     } else {
       this.calendarOptions.initialView = "dayGridMonth";
     }
+  },
+  methods: {
+    resetModal() {
+      this.newLesson = {};
+    },
+
+    editLesson2() {
+      let errors = [];
+      let date = new Date(this.selectedLesson.date);
+      // date.setUTCDate(date.getUTCDate() - 1);
+      date.setUTCHours(0, 0);
+      console.log(123);
+
+      const data = {
+        lessonName: this.selectedLesson.title,
+        lessonType: this.selectedLesson.type,
+        lessonLink: this.selectedLesson.url,
+        lessonTeacher: this.selectedLesson.teacher,
+        lessonNumber: this.selectedLesson.lessonNumber,
+        lessonDate: date,
+      };
+      console.log("=================");
+      console.log("date: ", date);
+      console.log("data: ", data);
+      console.log("=================");
+      for (let key in data) {
+        if (!data[key] && key != "lessonLink") {
+          errors.push(key);
+        }
+      }
+
+      if (errors.length > 0) {
+        alert("Заполните поля: " + errors.join(", "));
+      } else {
+        axios
+          .post(this.$nodeLink + "/editLesson", {
+            token: localStorage["token"],
+            data,
+            // lessonDate: date,
+            group: this.group,
+          })
+          .then(
+            (res) => {
+              if (res.status == 200) {
+                this.newLesson = {};
+                alert("Success!");
+                location.reload();
+              }
+            },
+            (err) => {
+              alert(err.response.data.msg);
+            }
+          );
+      }
+    },
   },
 };
 </script>
