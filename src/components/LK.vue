@@ -132,6 +132,7 @@
       >
       <hr />
       <b-button
+        v-show="false"
         v-for="day in weekDays"
         :key="day.dayName"
         class="mt-3"

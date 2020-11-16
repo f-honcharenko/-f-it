@@ -110,6 +110,7 @@
           flex-direction: column;
           height: 700px;
           border: 1px solid black;
+          overflow: auto;
         "
       >
         <div class="row">

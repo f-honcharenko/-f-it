@@ -38,7 +38,7 @@
         Тема: <i>{{ selectedEvent.theme }}</i>
       </h4>
       <h4>
-        Примечание: <span>{{ selectedEvent.theme }}</span>
+        Примечание: <span>{{ selectedEvent.note }}</span>
       </h4>
     </b-modal>
     <center>
