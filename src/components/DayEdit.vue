@@ -595,6 +595,10 @@ export default {
   },
 
   beforeMount() {
+    if (this.date == undefined || this.group == undefined) {
+      this.$router.go(-1);
+    }
+    console.log("SIMPLE", this.date, this.group);
     let date = new Date(this.date);
     date.setUTCDate(date.getUTCDate() - 1);
     date.setUTCHours(0, 0);
@@ -613,8 +617,35 @@ export default {
           }
         },
         (err) => {
-          console.log("ERR", err.response.data.msg);
-          alert(err.response.data.msg);
+          if (err.response.status == 404) {
+            let result = confirm(
+              "Вероятно, на эту дату не было запланировано ни одной пары. Желаете создать разметку под пары?"
+            );
+            if (result) {
+              axios
+                .post(this.$nodeLink + "/addLessonGrid", {
+                  token: localStorage["token"],
+                  date: date,
+                  group: this.group,
+                })
+                .then(
+                  (res) => {
+                    this.$router.go(-1);
+                    console.log(res);
+                  },
+                  (err) => {
+                    alert(
+                      "При создании разметки проиошла ошибка:\n" +
+                        err.response.data.msg
+                    );
+                  }
+                );
+            } else {
+              this.$router.go(-1);
+            }
+          }
+          console.log("111ERR", err.response.data.msg);
+          // alert(err.response.status);
         }
       );
   },

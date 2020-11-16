@@ -41,10 +41,118 @@
             ></b-form-input>
           </b-form-group>
 
+          <b-form-group label="События">
+            <b-list-group>
+              <b-list-group-item
+                button
+                v-for="(event, index) in selectedLesson.events"
+                :key="event.title"
+                ><span v-if="event.type"
+                  >{{ event.prefix }}{{ event.title }}</span
+                >
+                <span v-else>{{ event.title }}</span>
+                <b-button-toolbar style="float: right">
+                  <b-button
+                    title="remove lesson"
+                    @click="removeEvent(index)"
+                    v-bind:style="'background-color:transparent;border: none;padding: 0px 10px 0px 10px'"
+                  >
+                    <b-icon
+                      icon="x-square-fill"
+                      scale="1"
+                      variant="danger"
+                    ></b-icon>
+                  </b-button>
+                </b-button-toolbar>
+              </b-list-group-item>
+            </b-list-group>
+          </b-form-group>
+          <b-button
+            variant="success"
+            @click="
+              eventDate = selectedLesson.date;
+              eventNumber = selectedLesson.lessonNumber;
+              $bvModal.show('modal-prevent-closing4');
+            "
+            >Добавить</b-button
+          >
+          <b-form-group label="Примечание">
+            <b-form-textarea
+              id="textarea"
+              v-model="selectedLesson.note"
+              placeholder="Enter something..."
+              rows="3"
+              max-rows="6"
+            ></b-form-textarea>
+          </b-form-group>
+
           <!-- </b-form-group> -->
         </form>
       </b-modal>
       <!-- END modal3 -->
+      <!-- START modal4-->
+      <b-modal
+        id="modal-prevent-closing4"
+        ref="modal"
+        title="Новое событие"
+        @show="resetModal2"
+        @hidden="resetModal2"
+        @ok="addEvent"
+      >
+        <form ref="form" @submit.stop.prevent="handleSubmit">
+          <b-form-group label="Наименование*">
+            <b-form-input
+              required
+              type="text"
+              v-model="newEvent.title"
+            ></b-form-input>
+          </b-form-group>
+          <b-form-group label="Тема">
+            <b-form-input type="text" v-model="newEvent.theme"></b-form-input>
+          </b-form-group>
+          <b-form-group label="Примечание">
+            <b-form-textarea
+              id="textarea"
+              v-model="newEvent.note"
+              placeholder="Enter something..."
+              rows="3"
+              max-rows="6"
+            ></b-form-textarea>
+          </b-form-group>
+          <hr />
+          <!-- <center style="dsiplay: inline-block"> -->
+          <!-- <span
+              style="dsiplay: inline-block"
+              :class="{ 'font-weight-bold': newEventType }"
+            >
+              Префикс
+            </span>
+            <label class="switch">
+              <input type="checkbox" @click="newEventType = !newEventType" />
+              <span class="slider round"></span>
+            </label>
+
+            <span
+              style="dsiplay: inline-block"
+              :class="{ 'font-weight-bold': !newEventType }"
+            > -->
+          <h4>Цвет</h4>
+          <!-- </span> -->
+          <!-- </center> -->
+          <div v-if="newEventType">
+            <!-- <b-form-select
+              :options="prefixes"
+              v-model="newEvent.prefix"
+              required
+            > -->
+            <!-- </b-form-select> -->
+          </div>
+          <div v-else>
+            <input type="color" @change="myColor($event)" value="#364f5e" />
+          </div>
+        </form>
+      </b-modal>
+      <!-- END modal4 -->
       <center>
         <h1>{{ this.$route.query.group }} [Редактирование]</h1>
       </center>
@@ -80,6 +188,18 @@ export default {
   },
   data() {
     return {
+      eventDate: "",
+      eventNumber: "",
+      prefixes: ["🔴", "⚫️", "🔵", "⚪️"],
+      newEventType: false,
+      newEvent: {
+        title: "",
+        theme: "",
+        note: "",
+        prefix: "🔵",
+        type: "",
+        color: "#364f5e",
+      },
       options: {},
       auth: "",
       user: {},
@@ -109,10 +229,11 @@ export default {
         nowIndicator: true,
         eventClick: (info) => {
           info.jsEvent.preventDefault();
+          console.log("type", info.event.extendedProps.type);
           if (info.event.extendedProps.type == "bday") {
             console.log("bday");
           } else {
-            console.log();
+            console.log("number: ", info.event.extendedProps.lessonNumber);
             //REWRITE THIS(TITLE AND )
             this.selectedLesson = {
               date: info.event.start.setUTCHours(0, 0),
@@ -120,10 +241,14 @@ export default {
               teacher: info.event.extendedProps.teacher,
               type: info.event.extendedProps.type,
               url: info.event.url,
+              note: info.event.extendedProps.note,
+              events: info.event.extendedProps.events,
+
               lessonNumber: info.event.extendedProps.lessonNumber,
               group: this.$route.query.group,
             };
             this.$bvModal.show("modal-prevent-closing2");
+            console.log(this.selectedLesson);
             // this.$router.push({
             //   name: "LessonEdit",
             //   params: {
@@ -186,12 +311,14 @@ export default {
       },
       data: {},
       selectedLesson: {
+        note: "",
         title: "",
         teacher: "",
         type: "",
         url: "",
         lessonNumber: "",
         group: "",
+        events: [],
       },
     };
   },
@@ -228,7 +355,7 @@ export default {
           }
         },
         (err) => {
-          alert(err);
+          alert(err.response.data.msg);
         }
       );
   },
@@ -244,10 +371,91 @@ export default {
     }
   },
   methods: {
+    removeEvent(e) {
+      console.log(e);
+      let date = new Date(this.selectedLesson.date);
+      date.setUTCHours(0, 0);
+      axios
+        .post(this.$nodeLink + "/removeEvent", {
+          token: localStorage["token"],
+          group: this.$route.query.group,
+          lessonNumber: this.selectedLesson.lessonNumber,
+          date: date,
+          eventPosition: e,
+        })
+        .then(
+          (res) => {
+            if (res.status == 200) {
+              alert("Success");
+              location.reload();
+            }
+          },
+          (err) => {
+            alert(err);
+          }
+        );
+    },
+    myColor(e) {
+      console.log(e.target.value);
+      this.newEvent.color = e.target.value;
+    },
     resetModal() {
       this.newLesson = {};
     },
+    resetModal2() {
+      this.selectedLesson = {};
+    },
+    addEvent() {
+      let errors = [];
+      let date = new Date(this.eventDate);
+      // date.setUTCDate(date.getUTCDate() - 1);
+      date.setUTCHours(0, 0);
+      // newEvent: {
+      //   title: "",
+      //   theme: "",
+      //   note: "",
+      //   prefix: "🔵",
+      //   type: "",
+      //   color: "#364f5e",
+      // },
 
+      for (let key in this.newEvent) {
+        if (
+          !this.newEvent[key] &&
+          key != "theme" &&
+          key != "note" &&
+          key != "color" &&
+          key != "type" &&
+          key != "prefix"
+        ) {
+          errors.push(key);
+        }
+      }
+      this.newEvent.type = this.newEventType;
+      if (errors.length > 0) {
+        alert("Заполните поля: " + errors.join(", "));
+      } else {
+        axios
+          .post(this.$nodeLink + "/addEvent", {
+            token: localStorage["token"],
+            data: this.newEvent,
+            date: date,
+            group: this.$route.query.group,
+            number: this.eventNumber,
+          })
+          .then(
+            (res) => {
+              if (res.status == 200) {
+                alert("Success!");
+                location.reload();
+              }
+            },
+            (err) => {
+              alert(err.response.data.msg);
+            }
+          );
+      }
+    },
     editLesson2() {
       let errors = [];
       let date = new Date(this.selectedLesson.date);
@@ -257,18 +465,15 @@ export default {
 
       const data = {
         lessonName: this.selectedLesson.title,
+        lessonNote: this.selectedLesson.note,
         lessonType: this.selectedLesson.type,
         lessonLink: this.selectedLesson.url,
         lessonTeacher: this.selectedLesson.teacher,
         lessonNumber: this.selectedLesson.lessonNumber,
         lessonDate: date,
       };
-      console.log("=================");
-      console.log("date: ", date);
-      console.log("data: ", data);
-      console.log("=================");
       for (let key in data) {
-        if (!data[key] && key != "lessonLink") {
+        if (!data[key] && key != "lessonLink" && key != "lessonNote") {
           errors.push(key);
         }
       }
@@ -281,7 +486,7 @@ export default {
             token: localStorage["token"],
             data,
             // lessonDate: date,
-            group: this.group,
+            group: this.$route.query.group,
           })
           .then(
             (res) => {
@@ -304,4 +509,64 @@ export default {
 
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style scoped>
+/* The switch - the box around the slider */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+/* Hide default HTML checkbox */
+.switch input {
+  display: none;
+}
+
+/* The slider */
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #2196F3;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  -webkit-transition: 0.4s;
+  transition: 0.4s;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked + .slider:before {
+  -webkit-transform: translateX(26px);
+  -ms-transform: translateX(26px);
+  transform: translateX(26px);
+}
+
+/* Rounded sliders */
+.slider.round {
+  border-radius: 34px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
 </style> 

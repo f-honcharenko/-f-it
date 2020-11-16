@@ -4,11 +4,42 @@
       <h4>
         Преподователь: <i>{{ selectedLesson.teacher }}</i>
       </h4>
-      <!-- <h4>Время:<i>{{se  lectedLesson.dateS}}</i></h4>  -->
       <h4 v-if="selectedLesson.link">
         <a :href="selectedLesson.link" target="_blank">Ссылка</a><i></i>
       </h4>
       <h4 v-else>Ссылка отсутствует</h4>
+      <h4 v-show="selectedLesson.events">
+        <hr />
+        События:
+      </h4>
+      <b-list-group>
+        <b-list-group-item
+          button
+          v-for="event in selectedLesson.events"
+          :key="event.title"
+          @click="
+            selectedEvent = event;
+            $bvModal.show('modal-lg2');
+          "
+        >
+          <span>{{ event.title }}</span></b-list-group-item
+        >
+      </b-list-group>
+
+      <div v-if="selectedLesson.note">
+        <hr />
+        <h4>Примечание:</h4>
+        {{ selectedLesson.note }}
+      </div>
+    </b-modal>
+
+    <b-modal id="modal-lg2" size="lg" :title="selectedEvent.title">
+      <h4>
+        Тема: <i>{{ selectedEvent.theme }}</i>
+      </h4>
+      <h4>
+        Примечание: <span>{{ selectedEvent.theme }}</span>
+      </h4>
     </b-modal>
     <center>
       <h1>{{ this.$route.query.group }}</h1>
@@ -40,6 +71,11 @@ export default {
   },
   data() {
     return {
+      selectedEvent: {
+        title: "",
+        theme: "",
+        note: "",
+      },
       selectedLesson: {
         title: "",
         teacher: "",
@@ -90,6 +126,8 @@ export default {
               this.selectedLesson.link = info.event.url;
               this.selectedLesson.dateS = info.event.start;
               this.selectedLesson.dateE = String(info.event.end).slice(16, 21);
+              this.selectedLesson.note = info.event.extendedProps.note;
+              this.selectedLesson.events = info.event.extendedProps.events;
               this.$bvModal.show("modal-lg");
             } else {
               this.selectedLesson.title = "";
